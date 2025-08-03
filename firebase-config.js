@@ -306,7 +306,18 @@ async function cargarConfiguracionFirebase() {
 // Función para guardar todos los datos
 async function guardarTodoFirebase() {
     try {
-        await Promise.all([
+        console.log('💾 Iniciando guardado de todos los datos...');
+        
+        // Verificar que las variables estén disponibles
+        if (typeof estudiantes === 'undefined' || typeof dias === 'undefined') {
+            console.error('❌ Variables del sistema no disponibles');
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('Error: Sistema no inicializado completamente', 'error');
+            }
+            return false;
+        }
+        
+        const resultados = await Promise.all([
             guardarDatosFirebase(),
             guardarIndicadoresFirebase(),
             guardarEvaluacionFirebase(),
@@ -316,11 +327,18 @@ async function guardarTodoFirebase() {
             guardarPortafolioFirebase(),
             guardarConfiguracionFirebase()
         ]);
+        
         console.log('✅ Todos los datos guardados en Firebase');
-        mostrarAlerta('Todos los datos guardados en la nube', 'success');
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('Todos los datos guardados en la nube', 'success');
+        }
+        return true;
     } catch (error) {
         console.error('❌ Error al guardar todo:', error);
-        mostrarAlerta('Error al guardar en la nube', 'error');
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('Error al guardar en la nube', 'error');
+        }
+        return false;
     }
 }
 
@@ -354,12 +372,20 @@ async function cargarTodoFirebase() {
 
 // Función para sincronizar datos automáticamente
 function configurarSincronizacionAutomatica() {
-    // Sincronizar cada 30 segundos
+    // Sincronizar cada 10 segundos (más frecuente)
     setInterval(async () => {
-        await guardarTodoFirebase();
-    }, 30000);
+        try {
+            // Verificar que las variables estén disponibles
+            if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
+                await guardarTodoFirebase();
+                console.log('🔄 Sincronización automática ejecutada');
+            }
+        } catch (error) {
+            console.error('❌ Error en sincronización automática:', error);
+        }
+    }, 10000); // Cada 10 segundos
     
-    console.log('🔄 Sincronización automática configurada');
+    console.log('🔄 Sincronización automática configurada (cada 10 segundos)');
 }
 
 // Función para verificar conexión a Firebase
@@ -432,5 +458,19 @@ async function probarFirebase() {
     }
 }
 
+// Función para inicializar Firebase cuando el sistema esté listo
+function inicializarFirebaseCuandoListo() {
+    // Esperar a que las variables del sistema estén disponibles
+    if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
+        inicializarFirebase();
+    } else {
+        // Reintentar en 1 segundo
+        setTimeout(inicializarFirebaseCuandoListo, 1000);
+    }
+}
+
 // Inicializar Firebase cuando se carga la página
-document.addEventListener('DOMContentLoaded', inicializarFirebase); 
+document.addEventListener('DOMContentLoaded', () => {
+    // Esperar un poco más para que el sistema principal se cargue
+    setTimeout(inicializarFirebaseCuandoListo, 2000);
+}); 
