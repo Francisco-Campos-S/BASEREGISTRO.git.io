@@ -1,0 +1,1 @@
+# BASEREGISTRO.git.io
