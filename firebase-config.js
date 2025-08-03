@@ -1,12 +1,13 @@
 // ===== CONFIGURACIÓN FIREBASE =====
-// Configuración de Firebase (reemplaza con tus credenciales)
+// Configuración de Firebase para registro-asistencia-2026
 const firebaseConfig = {
-    apiKey: "AIzaSyBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    authDomain: "tu-proyecto.firebaseapp.com",
-    projectId: "tu-proyecto",
-    storageBucket: "tu-proyecto.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdef123456"
+    apiKey: "AIzaSyBj1Da2aE0pEzxT0Z-js1WuAtJ0lSemzX8",
+    authDomain: "registro-asistencia-2026.firebaseapp.com",
+    projectId: "registro-asistencia-2026",
+    storageBucket: "registro-asistencia-2026.firebasestorage.app",
+    messagingSenderId: "1064440707746",
+    appId: "1:1064440707746:web:279693274afef2ba1535fb",
+    measurementId: "G-SCF8REPGVL"
 };
 
 // Inicializar Firebase
@@ -352,4 +353,32 @@ async function verificarConexionFirebase() {
         console.error('❌ Error de conexión a Firebase:', error);
         return false;
     }
-} 
+}
+
+// Función para inicializar Firebase automáticamente
+async function inicializarFirebase() {
+    try {
+        console.log('🔥 Inicializando Firebase...');
+        
+        // Verificar conexión
+        const conexionExitosa = await verificarConexionFirebase();
+        
+        if (conexionExitosa) {
+            // Configurar sincronización automática
+            configurarSincronizacionAutomatica();
+            
+            // Intentar cargar datos existentes
+            console.log('☁️ Intentando cargar datos desde Firebase...');
+            await cargarTodoFirebase();
+            
+            console.log('🚀 Firebase inicializado correctamente');
+        } else {
+            console.log('⚠️ Firebase no disponible, usando almacenamiento local');
+        }
+    } catch (error) {
+        console.error('❌ Error al inicializar Firebase:', error);
+    }
+}
+
+// Inicializar Firebase cuando se carga la página
+document.addEventListener('DOMContentLoaded', inicializarFirebase); 
