@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Detección de Bloqueador de Anuncios</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .test-button {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .test-button.danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        .test-button.warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .test-button.info {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+        
+        .console-output {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+            border: 1px solid #333;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .status.success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid #10b981;
+            color: #10b981;
+        }
+        
+        .status.error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+        
+        .status.warning {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid #f59e0b;
+            color: #f59e0b;
+        }
+        
+        .status.info {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid #3b82f6;
+            color: #3b82f6;
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .instructions h3 {
+            margin-top: 0;
+            color: #f59e0b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test - Detección de Bloqueador de Anuncios</h1>
+        
+        <div class="instructions">
+            <h3>📋 Instrucciones</h3>
+            <p>Esta página te ayudará a diagnosticar si un bloqueador de anuncios está interfiriendo con Firebase.</p>
+            <p><strong>Problema:</strong> Si el botón "Guardar en la nube" no funciona, puede ser debido a un bloqueador de anuncios (como uBlock Origin) que está bloqueando las conexiones a Firebase.</p>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔍 Tests de Diagnóstico</h3>
+            
+            <button class="test-button info" onclick="testFirebaseConnection()">
+                🔗 Test Conexión Firebase
+            </button>
+            
+            <button class="test-button warning" onclick="testAdBlockerDetection()">
+                🚫 Detectar Bloqueador
+            </button>
+            
+            <button class="test-button danger" onclick="testFirebaseWrite()">
+                ✍️ Test Escritura Firebase
+            </button>
+            
+            <button class="test-button" onclick="testManualSave()">
+                💾 Test Guardado Manual
+            </button>
+            
+            <button class="test-button" onclick="clearConsole()">
+                🗑️ Limpiar Consola
+            </button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 Estado del Sistema</h3>
+            <div id="systemStatus">
+                <div class="status info">⏳ Verificando estado del sistema...</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📝 Consola de Salida</h3>
+            <div id="consoleOutput" class="console-output">
+                <div>🚀 Sistema de test iniciado...</div>
+                <div>📅 Fecha: <span id="currentDate"></span></div>
+                <div>🌐 Navegador: <span id="userAgent"></span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <script>
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBj1Da2aE0pEzxT0Z-js1WuAtJ0lSemzX8",
+            authDomain: "registro-asistencia-2026.firebaseapp.com",
+            projectId: "registro-asistencia-2026",
+            storageBucket: "registro-asistencia-2026.firebasestorage.app",
+            messagingSenderId: "1064440707746",
+            appId: "1:1064440707746:web:279693274afef2ba1535fb",
+            measurementId: "G-SCF8REPGVL"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Variables de simulación
+        let estudiantes = [
+            { id: 1, nombre: "Estudiante Test 1", asistencia: [] },
+            { id: 2, nombre: "Estudiante Test 2", asistencia: [] }
+        ];
+        
+        let dias = [
+            { fecha: "2026-01-15", nombre: "Día Test 1" },
+            { fecha: "2026-01-16", nombre: "Día Test 2" }
+        ];
+
+        // Función para agregar a la consola
+        function addToConsole(message, type = 'info') {
+            const consoleOutput = document.getElementById('consoleOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : type === 'warning' ? '#ffd43b' : '#74c0fc';
+            
+            consoleOutput.innerHTML += `<div style="color: ${color};">[${timestamp}] ${message}</div>`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        // Función para actualizar estado del sistema
+        function updateSystemStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('systemStatus');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        // Función para limpiar consola
+        function clearConsole() {
+            document.getElementById('consoleOutput').innerHTML = '';
+            addToConsole('🧹 Consola limpiada', 'info');
+        }
+
+        // Test de conexión a Firebase
+        async function testFirebaseConnection() {
+            addToConsole('🔗 Iniciando test de conexión a Firebase...', 'info');
+            updateSystemStatus('🔄 Probando conexión...', 'info');
+            
+            try {
+                // Verificar si Firebase está inicializado
+                if (typeof firebase === 'undefined') {
+                    throw new Error('Firebase no está inicializado');
+                }
+                
+                addToConsole('✅ Firebase está inicializado', 'success');
+                
+                // Intentar una operación de lectura simple
+                const testDoc = await db.collection('test').doc('connection-test').get();
+                addToConsole('✅ Conexión a Firebase exitosa', 'success');
+                updateSystemStatus('✅ Conexión a Firebase: EXITOSA', 'success');
+                
+            } catch (error) {
+                addToConsole(`❌ Error de conexión: ${error.message}`, 'error');
+                updateSystemStatus('❌ Conexión a Firebase: FALLIDA', 'error');
+            }
+        }
+
+        // Test de detección de bloqueador de anuncios
+        async function testAdBlockerDetection() {
+            addToConsole('🚫 Iniciando detección de bloqueador de anuncios...', 'info');
+            updateSystemStatus('🔄 Detectando bloqueador...', 'warning');
+            
+            try {
+                // Intentar una operación de escritura simple
+                const testDoc = db.collection('test').doc('adblocker-test');
+                await testDoc.set({
+                    timestamp: new Date().toISOString(),
+                    test: true,
+                    userAgent: navigator.userAgent
+                });
+                
+                addToConsole('✅ No se detectó bloqueador de anuncios', 'success');
+                updateSystemStatus('✅ Bloqueador de anuncios: NO DETECTADO', 'success');
+                
+            } catch (error) {
+                addToConsole(`🚫 Posible bloqueador detectado: ${error.message}`, 'warning');
+                
+                // Verificar si el error es específico de bloqueador
+                const errorMessage = error.message.toLowerCase();
+                const isAdBlockerError = errorMessage.includes('bloqueado') || 
+                                        errorMessage.includes('blocked') || 
+                                        errorMessage.includes('ublock') ||
+                                        errorMessage.includes('adblock') ||
+                                        errorMessage.includes('network error') ||
+                                        errorMessage.includes('permission denied');
+                
+                if (isAdBlockerError) {
+                    addToConsole('🚫 CONFIRMADO: Bloqueador de anuncios interfiriendo', 'error');
+                    updateSystemStatus('🚫 Bloqueador de anuncios: DETECTADO', 'error');
+                    showAdBlockerAlert();
+                } else {
+                    updateSystemStatus('⚠️ Error de conexión (no necesariamente bloqueador)', 'warning');
+                }
+            }
+        }
+
+        // Test de escritura en Firebase
+        async function testFirebaseWrite() {
+            addToConsole('✍️ Iniciando test de escritura en Firebase...', 'info');
+            updateSystemStatus('🔄 Probando escritura...', 'info');
+            
+            try {
+                const testData = {
+                    estudiantes: estudiantes,
+                    dias: dias,
+                    timestamp: new Date().toISOString(),
+                    test: true
+                };
+                
+                await db.collection('registroAsistencia').doc('test-write').set(testData);
+                addToConsole('✅ Escritura en Firebase exitosa', 'success');
+                updateSystemStatus('✅ Escritura en Firebase: EXITOSA', 'success');
+                
+            } catch (error) {
+                addToConsole(`❌ Error de escritura: ${error.message}`, 'error');
+                updateSystemStatus('❌ Escritura en Firebase: FALLIDA', 'error');
+            }
+        }
+
+        // Test de guardado manual
+        async function testManualSave() {
+            addToConsole('💾 Iniciando test de guardado manual...', 'info');
+            updateSystemStatus('🔄 Probando guardado manual...', 'info');
+            
+            try {
+                // Simular el guardado manual
+                const datos = {
+                    estudiantes: estudiantes || [],
+                    dias: dias || [],
+                    timestamp: new Date().toISOString(),
+                    version: '1.0',
+                    dispositivo: navigator.userAgent,
+                    ultimaActualizacion: new Date().toLocaleString('es-ES')
+                };
+                
+                await db.collection('registroAsistencia').doc('datos').set(datos);
+                addToConsole('✅ Guardado manual exitoso', 'success');
+                updateSystemStatus('✅ Guardado manual: EXITOSO', 'success');
+                
+            } catch (error) {
+                addToConsole(`❌ Error en guardado manual: ${error.message}`, 'error');
+                updateSystemStatus('❌ Guardado manual: FALLIDO', 'error');
+            }
+        }
+
+        // Función para mostrar alerta de bloqueador de anuncios
+        function showAdBlockerAlert() {
+            const mensaje = `
+🚫 <strong>Bloqueador de Anuncios Detectado</strong><br><br>
+Se confirmó que un bloqueador de anuncios está interfiriendo con Firebase.<br><br>
+<strong>Soluciones:</strong><br>
+1. <strong>Deshabilitar temporalmente</strong> el bloqueador para este sitio<br>
+2. <strong>Agregar excepción</strong> para *.firebaseapp.com y *.googleapis.com<br>
+3. <strong>Usar modo incógnito</strong> sin bloqueador<br><br>
+<strong>Nota:</strong> Los datos se siguen guardando localmente.
+            `;
+            
+            const alertaDiv = document.createElement('div');
+            alertaDiv.innerHTML = `
+                <div style="
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                    border: 2px solid #f59e0b;
+                    border-radius: 12px;
+                    padding: 20px;
+                    max-width: 500px;
+                    z-index: 10000;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    color: #000;
+                ">
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <span style="font-size: 24px;">🚫</span>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        ${mensaje}
+                    </div>
+                    <div style="text-align: center;">
+                        <button onclick="this.parentElement.parentElement.remove()" style="
+                            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                            color: white;
+                            border: none;
+                            padding: 10px 20px;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-weight: bold;
+                        ">
+                            Entendido
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(alertaDiv);
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('currentDate').textContent = new Date().toLocaleString('es-ES');
+            document.getElementById('userAgent').textContent = navigator.userAgent.substring(0, 50) + '...';
+            
+            addToConsole('✅ Página de test cargada correctamente', 'success');
+            updateSystemStatus('✅ Sistema listo para testing', 'success');
+        });
+    </script>
+</body>
+</html> 

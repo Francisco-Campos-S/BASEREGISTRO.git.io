@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Botón Guardar en la Nube</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            opacity: 0.9;
+        }
+        .console-output {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔍 Test del Botón "Guardar en la Nube"</h1>
+        
+        <div id="status-container"></div>
+        
+        <h3>Botones de Prueba:</h3>
+        <button class="test-button" onclick="testGuardarManual()">
+            ☁️ Test Guardar Manual
+        </button>
+        <button class="test-button" onclick="testDiagnostico()">
+            🔍 Test Diagnóstico
+        </button>
+        <button class="test-button" onclick="testFirebase()">
+            🧪 Test Firebase
+        </button>
+        <button class="test-button" onclick="limpiarConsola()">
+            🗑️ Limpiar Consola
+        </button>
+        
+        <h3>Consola de Salida:</h3>
+        <div id="console-output" class="console-output">
+            Consola de prueba iniciada...<br>
+            Abra la consola del navegador (F12) para ver más detalles.<br>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    
+    <!-- Scripts de la aplicación -->
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+    
+    <script>
+        // Variables de prueba
+        let estudiantes = [
+            { nombre: 'Juan', apellido1: 'Pérez', apellido2: 'García', cedula: '123456789', asistenciaDias: [] }
+        ];
+        let dias = [
+            { nombre: 'Día 1', fecha: '2026-01-15', lecciones: 4 }
+        ];
+        
+        // Función para mostrar estado
+        function mostrarEstado(mensaje, tipo) {
+            const container = document.getElementById('status-container');
+            const div = document.createElement('div');
+            div.className = `status ${tipo}`;
+            div.textContent = mensaje;
+            container.appendChild(div);
+            
+            // Limpiar después de 5 segundos
+            setTimeout(() => {
+                if (div.parentNode) {
+                    div.remove();
+                }
+            }, 5000);
+        }
+        
+        // Función para agregar a la consola
+        function agregarAConsola(mensaje) {
+            const consoleDiv = document.getElementById('console-output');
+            consoleDiv.innerHTML += mensaje + '<br>';
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        
+        // Interceptar console.log para mostrar en la página
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            agregarAConsola('✅ ' + args.join(' '));
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            agregarAConsola('❌ ' + args.join(' '));
+        };
+        
+        // Función de prueba para guardar manual
+        async function testGuardarManual() {
+            try {
+                mostrarEstado('Iniciando prueba de guardado manual...', 'info');
+                const resultado = await guardarManualConNotificacion();
+                
+                if (resultado) {
+                    mostrarEstado('✅ Guardado manual exitoso', 'success');
+                } else {
+                    mostrarEstado('❌ Guardado manual fallido', 'error');
+                }
+            } catch (error) {
+                mostrarEstado('❌ Error en prueba: ' + error.message, 'error');
+            }
+        }
+        
+        // Función de prueba para diagnóstico
+        async function testDiagnostico() {
+            try {
+                mostrarEstado('Iniciando diagnóstico...', 'info');
+                await diagnosticarBotonGuardar();
+                mostrarEstado('✅ Diagnóstico completado', 'success');
+            } catch (error) {
+                mostrarEstado('❌ Error en diagnóstico: ' + error.message, 'error');
+            }
+        }
+        
+        // Función de prueba para Firebase
+        async function testFirebase() {
+            try {
+                mostrarEstado('Iniciando prueba de Firebase...', 'info');
+                await probarFirebase();
+                mostrarEstado('✅ Prueba de Firebase completada', 'success');
+            } catch (error) {
+                mostrarEstado('❌ Error en prueba de Firebase: ' + error.message, 'error');
+            }
+        }
+        
+        // Función para limpiar consola
+        function limpiarConsola() {
+            document.getElementById('console-output').innerHTML = 'Consola limpiada...<br>';
+        }
+        
+        // Inicializar cuando la página cargue
+        document.addEventListener('DOMContentLoaded', () => {
+            agregarAConsola('Página de prueba cargada');
+            agregarAConsola('Variables de prueba inicializadas:');
+            agregarAConsola('  - estudiantes: ' + estudiantes.length + ' estudiante(s)');
+            agregarAConsola('  - dias: ' + dias.length + ' día(s)');
+        });
+    </script>
+</body>
+</html> 
