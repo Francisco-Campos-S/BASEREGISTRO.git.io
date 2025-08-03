@@ -13,6 +13,9 @@ Sistema profesional para el control de asistencia estudiantil con integración d
 - ✅ **Portafolios**: Sistema de portafolios
 - ✅ **SEA Período**: Resumen general de evaluaciones
 - ✅ **Firebase Integration**: Almacenamiento en la nube
+- ✅ **🔄 Guardado Automático**: Sincronización ultra frecuente cada 2 segundos
+- ✅ **📱 Multi-Dispositivo**: Sincronización automática entre dispositivos
+- ✅ **☁️ Persistencia en Nube**: Datos disponibles desde cualquier lugar
 - ✅ **Exportación Excel**: Importar/exportar datos
 - ✅ **Modo Oscuro**: Interfaz adaptable
 - ✅ **Responsive**: Diseño adaptable a dispositivos
@@ -71,6 +74,35 @@ service cloud.firestore {
 ```
 
 **⚠️ IMPORTANTE**: Estas reglas permiten acceso público. Para producción, configura autenticación.
+
+## 🔄 Sistema de Guardado Automático
+
+### ⚡ Características del Guardado Automático
+- **🔄 Sincronización Ultra Frecuente**: Cada 2 segundos se sincronizan todos los datos
+- **📱 Multi-Dispositivo**: Los datos se sincronizan automáticamente entre dispositivos
+- **☁️ Persistencia en Nube**: Los datos se mantienen en Firebase Firestore
+- **🎯 Eventos Automáticos**: Se guarda al hacer clic, escribir, cambiar ventana, etc.
+- **📊 Indicador Visual**: Estado de sincronización visible en tiempo real
+
+### 🚀 Cómo Funciona
+1. **Al abrir la aplicación**: Se cargan automáticamente los datos desde Firebase
+2. **Al editar datos**: Se guardan automáticamente cada 2 segundos
+3. **Al cambiar dispositivo**: Los datos están disponibles inmediatamente
+4. **Indicador de estado**: Muestra si la sincronización está activa
+
+### 🔧 Botón de Sincronización Manual
+- **Botón "Sincronizar Ahora"**: Permite forzar la sincronización manual
+- **Indicador de carga**: Muestra el progreso de la sincronización
+- **Feedback visual**: Confirma si la operación fue exitosa
+
+### 📈 Logs de Sincronización
+El sistema genera logs detallados en la consola del navegador:
+- `🔄 Sincronización automática ejecutada (cada 2s)`
+- `💾 Guardado al hacer clic`
+- `💾 Guardado al escribir`
+- `💾 Guardado de emergencia antes de salir`
+
+Para más detalles, consulta el archivo [GUARDADO-AUTOMATICO.md](GUARDADO-AUTOMATICO.md)
 
 ## 🚀 Despliegue en GitHub Pages
 

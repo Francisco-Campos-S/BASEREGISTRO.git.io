@@ -25,32 +25,43 @@ async function guardarDatosFirebase(mostrarNotificacion = false) {
         // Verificar que las variables estén definidas
         if (typeof estudiantes === 'undefined') {
             console.error('❌ Variable "estudiantes" no está definida');
-            return;
+            return false;
         }
         if (typeof dias === 'undefined') {
             console.error('❌ Variable "dias" no está definida');
-            return;
+            return false;
+        }
+        
+        // Verificar que hay datos para guardar
+        if (!estudiantes || estudiantes.length === 0) {
+            console.log('📝 No hay estudiantes para guardar');
+            return false;
         }
         
         const datos = {
             estudiantes: estudiantes || [],
             dias: dias || [],
             timestamp: new Date().toISOString(),
-            version: VERSION || '1.0'
+            version: VERSION || '1.0',
+            dispositivo: navigator.userAgent,
+            ultimaActualizacion: new Date().toLocaleString('es-ES')
         };
         
         await db.collection('registroAsistencia').doc('datos').set(datos);
-        console.log('✅ Datos guardados en Firebase');
+        console.log('✅ Datos guardados en Firebase -', new Date().toLocaleTimeString());
         
         // Solo mostrar notificación si se solicita
         if (mostrarNotificacion && typeof mostrarAlerta === 'function') {
             mostrarAlerta('Datos guardados en la nube', 'success');
         }
+        
+        return true;
     } catch (error) {
         console.error('❌ Error al guardar en Firebase:', error);
         if (mostrarNotificacion && typeof mostrarAlerta === 'function') {
             mostrarAlerta('Error al guardar en la nube', 'error');
         }
+        return false;
     }
 }
 
@@ -379,22 +390,36 @@ async function cargarTodoFirebase(mostrarNotificacion = false) {
 
 // Función para sincronizar datos automáticamente
 function configurarSincronizacionAutomatica() {
-    // Sincronizar cada 5 segundos (muy frecuente)
+    console.log('🔄 Configurando sincronización automática ULTRA FRECUENTE...');
+    
+    // Sincronizar cada 2 segundos (ULTRA FRECUENTE para GitHub Pages)
     setInterval(async () => {
         try {
             // Verificar que las variables estén disponibles
             if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
                 await guardarTodoFirebase(false); // SIN notificaciones
-                console.log('🔄 Sincronización automática ejecutada');
+                console.log('🔄 Sincronización automática ejecutada (cada 2s)');
             }
         } catch (error) {
             console.error('❌ Error en sincronización automática:', error);
         }
-    }, 5000); // Cada 5 segundos
+    }, 2000); // Cada 2 segundos
     
-    console.log('🔄 Sincronización automática configurada (cada 5 segundos)');
+    // Sincronización adicional cada 10 segundos para datos críticos
+    setInterval(async () => {
+        try {
+            if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
+                await guardarDatosFirebase(false); // Solo datos principales
+                console.log('💾 Sincronización crítica ejecutada (cada 10s)');
+            }
+        } catch (error) {
+            console.error('❌ Error en sincronización crítica:', error);
+        }
+    }, 10000); // Cada 10 segundos
     
-    // También sincronizar cuando el usuario sale de la página
+    console.log('🔄 Sincronización automática ULTRA FRECUENTE configurada');
+    
+    // Sincronizar cuando el usuario sale de la página
     window.addEventListener('beforeunload', async () => {
         try {
             if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
@@ -417,6 +442,55 @@ function configurarSincronizacionAutomatica() {
             console.error('❌ Error en guardado al cambiar ventana:', error);
         }
     });
+    
+    // Sincronizar cuando el usuario hace clic en cualquier lugar
+    document.addEventListener('click', debounce(async () => {
+        try {
+            if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
+                await guardarDatosFirebase(false); // Solo datos principales
+                console.log('💾 Guardado al hacer clic');
+            }
+        } catch (error) {
+            console.error('❌ Error en guardado al hacer clic:', error);
+        }
+    }, 1000)); // Debounce de 1 segundo
+    
+    // Sincronizar cuando el usuario escribe en cualquier input
+    document.addEventListener('input', debounce(async () => {
+        try {
+            if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
+                await guardarDatosFirebase(false); // Solo datos principales
+                console.log('💾 Guardado al escribir');
+            }
+        } catch (error) {
+            console.error('❌ Error en guardado al escribir:', error);
+        }
+    }, 500)); // Debounce de 0.5 segundos
+    
+    // Sincronizar cuando cambia el tamaño de la ventana
+    window.addEventListener('resize', debounce(async () => {
+        try {
+            if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
+                await guardarDatosFirebase(false); // Solo datos principales
+                console.log('💾 Guardado al cambiar tamaño de ventana');
+            }
+        } catch (error) {
+            console.error('❌ Error en guardado al cambiar tamaño:', error);
+        }
+    }, 2000)); // Debounce de 2 segundos
+}
+
+// Función debounce para evitar demasiadas llamadas
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
 // Función para verificar conexión a Firebase
@@ -431,6 +505,58 @@ async function verificarConexionFirebase() {
     }
 }
 
+// Función para mostrar estado de sincronización
+function mostrarEstadoSincronizacion() {
+    const estadoDiv = document.createElement('div');
+    estadoDiv.id = 'estado-sincronizacion';
+    estadoDiv.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        z-index: 10000;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        border: 2px solid rgba(255,255,255,0.2);
+    `;
+    estadoDiv.innerHTML = '🔄 Sincronización automática ACTIVA';
+    
+    // Agregar al body si no existe
+    if (!document.getElementById('estado-sincronizacion')) {
+        document.body.appendChild(estadoDiv);
+    }
+    
+    // Actualizar cada 30 segundos
+    setInterval(() => {
+        const ahora = new Date().toLocaleTimeString('es-ES');
+        estadoDiv.innerHTML = `🔄 Sincronización automática ACTIVA - ${ahora}`;
+    }, 30000);
+}
+
+// Función para verificar y mostrar estado de datos
+async function verificarEstadoDatos() {
+    try {
+        const doc = await db.collection('registroAsistencia').doc('datos').get();
+        if (doc.exists) {
+            const datos = doc.data();
+            const ultimaActualizacion = datos.ultimaActualizacion || 'Desconocida';
+            console.log('📊 Estado de datos en Firebase:');
+            console.log('   - Estudiantes:', datos.estudiantes?.length || 0);
+            console.log('   - Días:', datos.dias?.length || 0);
+            console.log('   - Última actualización:', ultimaActualizacion);
+            console.log('   - Dispositivo:', datos.dispositivo || 'Desconocido');
+        } else {
+            console.log('📝 No hay datos en Firebase');
+        }
+    } catch (error) {
+        console.error('❌ Error al verificar estado de datos:', error);
+    }
+}
+
 // Función para inicializar Firebase automáticamente
 async function inicializarFirebase() {
     try {
@@ -440,14 +566,43 @@ async function inicializarFirebase() {
         const conexionExitosa = await verificarConexionFirebase();
         
         if (conexionExitosa) {
-            // Configurar sincronización automática
+            console.log('✅ Conexión a Firebase exitosa');
+            
+            // Mostrar indicador de estado de sincronización
+            mostrarEstadoSincronizacion();
+            
+            // Configurar sincronización automática ULTRA FRECUENTE
             configurarSincronizacionAutomatica();
             
             // Intentar cargar datos existentes
             console.log('☁️ Intentando cargar datos desde Firebase...');
-            await cargarTodoFirebase(false); // SIN notificaciones
+            const datosCargados = await cargarTodoFirebase(false); // SIN notificaciones
             
-            console.log('🚀 Firebase inicializado correctamente');
+            if (datosCargados) {
+                console.log('✅ Datos cargados desde Firebase exitosamente');
+            } else {
+                console.log('📝 No hay datos en Firebase, usando datos locales');
+            }
+            
+            console.log('🚀 Firebase inicializado correctamente con sincronización ULTRA FRECUENTE');
+            
+            // Verificar estado de datos después de 5 segundos
+            setTimeout(async () => {
+                await verificarEstadoDatos();
+            }, 5000);
+            
+            // Forzar una sincronización inicial después de 3 segundos
+            setTimeout(async () => {
+                try {
+                    if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
+                        await guardarTodoFirebase(false);
+                        console.log('💾 Sincronización inicial forzada completada');
+                    }
+                } catch (error) {
+                    console.error('❌ Error en sincronización inicial:', error);
+                }
+            }, 3000);
+            
         } else {
             console.log('⚠️ Firebase no disponible, usando almacenamiento local');
         }

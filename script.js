@@ -1369,6 +1369,56 @@ function guardarDatosManual() {
     mostrarAlerta('Datos guardados manualmente', 'exito');
 }
 
+// Función para forzar sincronización manual
+async function forzarSincronizacionManual() {
+    try {
+        console.log('🚀 Forzando sincronización manual...');
+        
+        // Verificar conexión a Firebase
+        const conexionExitosa = await verificarConexionFirebase();
+        if (!conexionExitosa) {
+            mostrarAlerta('Error: No se pudo conectar a Firebase', 'error');
+            return;
+        }
+        
+        // Verificar que las variables estén disponibles
+        if (typeof estudiantes === 'undefined' || typeof dias === 'undefined') {
+            mostrarAlerta('Error: Sistema no inicializado completamente', 'error');
+            return;
+        }
+        
+        // Mostrar indicador de carga
+        const boton = event.target.closest('button');
+        const textoOriginal = boton.innerHTML;
+        boton.innerHTML = '<span>⏳</span> Sincronizando...';
+        boton.disabled = true;
+        
+        // Guardar todos los datos
+        const resultado = await guardarTodoFirebase(true);
+        
+        // Restaurar botón
+        boton.innerHTML = textoOriginal;
+        boton.disabled = false;
+        
+        if (resultado) {
+            mostrarAlerta('✅ Sincronización manual completada exitosamente', 'exito');
+        } else {
+            mostrarAlerta('❌ Error en sincronización manual', 'error');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error en sincronización manual:', error);
+        mostrarAlerta('Error al sincronizar datos', 'error');
+        
+        // Restaurar botón en caso de error
+        const boton = event.target.closest('button');
+        if (boton) {
+            boton.innerHTML = '<span>🔄</span> Sincronizar Ahora';
+            boton.disabled = false;
+        }
+    }
+}
+
 function actualizarContador() {
     // Contar solo estudiantes que tienen nombre
     const estudiantesConNombre = estudiantes.filter(est => 
