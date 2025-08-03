@@ -22,19 +22,33 @@ const auth = firebase.auth();
 // Función para guardar datos de asistencia
 async function guardarDatosFirebase() {
     try {
+        // Verificar que las variables estén definidas
+        if (typeof estudiantes === 'undefined') {
+            console.error('❌ Variable "estudiantes" no está definida');
+            return;
+        }
+        if (typeof dias === 'undefined') {
+            console.error('❌ Variable "dias" no está definida');
+            return;
+        }
+        
         const datos = {
-            estudiantes: estudiantes,
-            dias: dias,
+            estudiantes: estudiantes || [],
+            dias: dias || [],
             timestamp: new Date().toISOString(),
-            version: VERSION
+            version: VERSION || '1.0'
         };
         
         await db.collection('registroAsistencia').doc('datos').set(datos);
         console.log('✅ Datos guardados en Firebase');
-        mostrarAlerta('Datos guardados en la nube', 'success');
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('Datos guardados en la nube', 'success');
+        }
     } catch (error) {
         console.error('❌ Error al guardar en Firebase:', error);
-        mostrarAlerta('Error al guardar en la nube', 'error');
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('Error al guardar en la nube', 'error');
+        }
     }
 }
 
@@ -61,8 +75,13 @@ async function cargarDatosFirebase() {
 // Función para guardar indicadores
 async function guardarIndicadoresFirebase() {
     try {
+        if (typeof indicadores === 'undefined') {
+            console.error('❌ Variable "indicadores" no está definida');
+            return;
+        }
+        
         await db.collection('registroAsistencia').doc('indicadores').set({
-            indicadores: indicadores,
+            indicadores: indicadores || [],
             timestamp: new Date().toISOString()
         });
         console.log('✅ Indicadores guardados en Firebase');
@@ -377,6 +396,39 @@ async function inicializarFirebase() {
         }
     } catch (error) {
         console.error('❌ Error al inicializar Firebase:', error);
+    }
+}
+
+// Función de prueba simple para Firebase
+async function probarFirebase() {
+    try {
+        console.log('🧪 Probando Firebase...');
+        
+        // Verificar conexión
+        const conexionExitosa = await verificarConexionFirebase();
+        if (!conexionExitosa) {
+            console.error('❌ No se pudo conectar a Firebase');
+            return;
+        }
+        
+        // Probar escritura simple
+        await db.collection('test').doc('sistema-principal').set({
+            mensaje: 'Prueba desde sistema principal',
+            timestamp: new Date().toISOString()
+        });
+        
+        console.log('✅ Prueba de Firebase exitosa');
+        
+        // Intentar guardar datos si están disponibles
+        if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
+            console.log('📊 Intentando guardar datos del sistema...');
+            await guardarTodoFirebase();
+        } else {
+            console.log('⚠️ Variables del sistema no disponibles aún');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error en prueba de Firebase:', error);
     }
 }
 
