@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="Sistema profesional de registro de asistencia para instituciones educativas">
+    <meta name="keywords" content="asistencia, registro, estudiantes, educación, control">
+    <meta name="author" content="Sistema de Registro 2026">
+    <title>Registro de Asistencia 2026</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+</head>
+<body>
+    <!-- SheetJS para exportar a Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <!-- Menú de navegación separado del header -->
+    <div class="menu-navegacion">
+        <div class="menu-botones">
+            <button onclick="scrollToSection('asistencia')" class="menu-btn asistencia-btn">
+                <span>📊</span> Asistencia
+            </button>
+            <button onclick="scrollToSection('indicadores')" class="menu-btn indicadores-btn">
+                <span>📊</span> Indicadores
+            </button>
+            <button onclick="scrollToSection('sea-periodo-app')" class="menu-btn sea-periodo-btn">
+                <span>📊</span> SEA I PERÍODO
+            </button>
+            <button onclick="scrollToSection('trabajo-cotidiano')" class="menu-btn trabajo-btn">
+                <span>📋</span> Trabajo Cotidiano
+            </button>
+            <button onclick="scrollToSection('tareas')" class="menu-btn tareas-btn">
+                <span>📚</span> Tareas
+            </button>
+            <button onclick="scrollToSection('evaluacion')" class="menu-btn evaluacion-btn">
+                <span>📝</span> Evaluación
+            </button>
+            <button onclick="scrollToSection('proyecto')" class="menu-btn proyecto-btn">
+                <span>🔬</span> Proyecto
+            </button>
+            <button onclick="scrollToSection('portafolio')" class="menu-btn portafolio-btn">
+                <span>📁</span> Portafolio
+            </button>
+            <button onclick="mostrarResumenEvaluaciones()" class="menu-btn resumen-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <span>📋</span> Resumen
+            </button>
+        </div>
+        
+        <!-- Botón de modo oscuro -->
+        <button id="btnModoOscuro" onclick="toggleModoOscuro()">
+            🌙
+        </button>
+        <div id="tooltipModoOscuro">Modo oscuro</div>
+    </div>
+
+    <!-- Contenido principal debajo del menú -->
+    <div class="main-content-header">
+        <div class="main-content-icon">
+            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135768.png" alt="Persona">
+        </div>
+        <div class="main-content-calendar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1976d2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="4"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+                <line x1="7" y1="14" x2="17" y2="14"/>
+                <line x1="7" y1="18" x2="17" y2="18"/>
+            </svg>
+        </div>
+        <div class="main-content-text">
+            <h2>Registro de Asistencia 2026</h2>
+            <p>Sistema profesional para el control de asistencia por día y estudiante</p>
+        </div>
+    </div>
+
+    <div class="instrucciones">
+        <strong>📚 Instrucciones:</strong>
+        <p>📥 Solo se permite importar y exportar archivos Excel (.xlsx).</p>
+        <p>🗓️ Para agregar días de asistencia, usa el botón <b>+ Agregar día</b>.</p>
+        <p>✏️ Puedes editar los datos de los estudiantes y la asistencia por día directamente en la tabla.</p>
+        <p>📄 Para descargar la plantilla de ejemplo, usa <b>Descargar plantilla</b>.</p>
+        <p>💾 Para guardar los datos, simplemente edita la tabla; se guardan automáticamente.</p>
+        <p>📤 Para importar datos desde Excel, usa <b>Importar Excel</b>.</p>
+    </div>
+
+    <div class="actions-bar">
+        <div class="actions-right">
+                            <button onclick="descargarPlantilla()">
+                <span>📄</span> Descargar plantilla
+            </button>
+            <input type="file" id="inputExcel" accept=".xlsx" style="display:none" onchange="cargarPlantilla(event)">
+                            <button onclick="document.getElementById('inputExcel').click()">
+                <span>📥</span> Importar Excel
+            </button>
+                            <button onclick="exportarDatos()">
+                <span>📤</span> Exportar Excel
+            </button>
+                            <button onclick="guardarDatosManual()">
+                <span>💾</span> Guardar datos
+            </button>
+                            <button onclick="guardarTodoFirebase()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+                <span>☁️</span> Guardar en la nube
+            </button>
+                            <button onclick="cargarTodoFirebase()" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white;">
+                <span>📥</span> Cargar desde la nube
+            </button>
+                            <button onclick="agregarEstudiante()">
+                <span>📝</span> Agregar estudiante
+            </button>
+                            <button onclick="ordenarEstudiantesManual()" class="btn-agregar-est">
+                <span>🔤</span>  Ordenar estudiantes
+            </button>
+        </div>
+    </div>
+
+    <div id="contadorEstudiantes"></div>
+
+
+
+    <!-- Tabla de referencia de porcentajes -->
+    <div class="tabla-referencia">
+        <h4>📊 Escala de Porcentaje de Asistencia</h4>
+        <table class="referencia-table">
+            <thead>
+                <tr>
+                    <th>Porcentaje injustificadas del total de lecciones</th>
+                    <th>Asignación de porcentaje</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>0% a menos de 1%</td><td>10%</td></tr>
+                <tr><td>1% a menos de 10%</td><td>9%</td></tr>
+                <tr><td>10% a menos de 20%</td><td>8%</td></tr>
+                <tr><td>20% a menos de 30%</td><td>7%</td></tr>
+                <tr><td>30% a menos de 40%</td><td>6%</td></tr>
+                <tr><td>40% a menos de 50%</td><td>5%</td></tr>
+                <tr><td>50% a menos de 60%</td><td>4%</td></tr>
+                <tr><td>60% a menos de 70%</td><td>3%</td></tr>
+                <tr><td>70% a menos de 80%</td><td>2%</td></tr>
+                <tr><td>80% a menos de 90%</td><td>1%</td></tr>
+                <tr><td>90% a 100%</td><td>0%</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-container" id="asistencia">
+        <div class="asistencia-actions">
+            <button onclick="scrollToMenu()" class="btn-volver-menu">
+                <span>🏠</span> Volver al Menú
+            </button>
+            <input type="number" id="inputEliminarEst" min="1" max="50" placeholder="N° estu">
+                            <button onclick="eliminarEstudiantePorNumero()" class="btn-eliminar-est">
+                <span>🗑️</span> Eliminar estudiante
+            </button>
+            <label for="alertaTempranaInput">% Alerta temprana:</label>
+            <input type="number" id="alertaTempranaInput" min="0" max="10" value="2" step="1">
+        </div>
+        <div class="table-wrapper">
+            <div class="table-responsive">
+                <div id="app"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Indicadores -->
+    <div class="indicadores-container" id="indicadores">
+        <h3>📊 Gestión de Indicadores</h3>
+        <div class="indicadores-instructions">
+            <p><strong>💡 Instrucciones:</strong> PUEDE INGRESAR LOS INDICADORES POR GRUPO PARA LLEVAR EL CONTROL. ESTOS INDICADORES SE UTILIZAN EN TAREAS Y TRABAJO COTIDIANO.</p>
+        </div>
+        
+        <div class="indicadores-actions">
+            <button onclick="scrollToMenu()" class="btn-volver-menu">
+                <span>🏠</span> Volver al Menú
+            </button>
+            <button onclick="descargarPlantillaIndicadores()" class="btn-descargar-plantilla-indicadores">
+                <span>📄</span> Descargar Plantilla
+            </button>
+            <button onclick="importarIndicadores()" class="btn-importar-indicadores">
+                <span>📥</span> Importar Indicadores
+            </button>
+            <button onclick="agregarIndicador()" class="btn-agregar-indicador">
+                <span>➕</span> Agregar Indicador
+            </button>
+            <input type="number" id="inputEliminarIndicador" min="1" max="50" placeholder="N° indicador" style="width: 120px; margin-right: 5px;">
+            <button onclick="eliminarIndicador()" class="btn-eliminar-indicador">
+                <span>🗑️</span> Eliminar Indicador
+            </button>
+            <button onclick="exportarIndicadores()" class="btn-exportar-indicadores">
+                <span>📤</span> Exportar Indicadores
+            </button>
+
+            <input type="file" id="inputIndicadores" accept=".xlsx" style="display:none" onchange="cargarIndicadores(event)">
+        </div>
+
+        <div class="indicadores-content">
+            <div class="indicadores-header">
+                <h4>📋 INDICADORES</h4>
+                <p class="indicadores-subtitle">ANOTE LOS INDICADORES</p>
+            </div>
+            
+            <div class="indicadores-table-container">
+                <div class="indicadores-table-responsive">
+                    <div id="indicadores-app"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Sección de Trabajo Cotidiano -->
+    <div class="trabajo-cotidiano-container" id="trabajo-cotidiano">
+        <h3>📋 Trabajo Cotidiano</h3>
+        <div class="trabajo-cotidiano-instructions">
+            <p><strong>💡 Instrucciones:</strong> EVALUACIÓN DIARIA POR ESTUDIANTE. PUEDE CONFIGURAR LA ESCALA DE EVALUACIÓN Y LAS FECHAS. LOS DATOS SE GUARDAN AUTOMÁTICAMENTE.</p>
+        </div>
+        
+        <div class="trabajo-cotidiano-actions">
+            <button onclick="scrollToMenu()" class="btn-volver-menu">
+                <span>🏠</span> Volver al Menú
+            </button>
+            <button onclick="agregarDiaTrabajo()" class="btn-agregar-dia-trabajo">
+                <span>📅</span> + Indicador
+            </button>
+            <button onclick="exportarTrabajoCotidiano()" class="btn-exportar-trabajo">
+                <span>📤</span> Exportar Trabajo Cotidiano
+            </button>
+
+            <div class="escala-config">
+                <label for="escalaMaximaInput">Escala máxima:</label>
+                <input type="number" id="escalaMaximaInput" min="1" max="10" value="3" step="1">
+                <label for="valorTotalTrabajoInput">Valor total:</label>
+                <input type="number" id="valorTotalTrabajoInput" min="1" max="100" value="35" step="1">
+            </div>
+        </div>
+
+        <div class="trabajo-cotidiano-table-container">
+            <div class="trabajo-cotidiano-table-responsive">
+                <div id="trabajo-cotidiano-app"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Tareas -->
+    <div class="tareas-container" id="tareas">
+        <h3>📚 Evaluación de Tareas</h3>
+        <div class="tareas-instructions">
+            <p><strong>💡 Instrucciones:</strong> SE EDITA SOLO LO QUE ESTÁ EN BLANCO. PUEDE CAMBIAR LOS PUNTOS MÁXIMOS DE CADA TAREA Y EL % DE PESO, LO DEMÁS SE CALCULA AUTOMÁTICAMENTE.</p>
+        </div>
+        
+        <div class="tareas-actions">
+            <button onclick="scrollToMenu()" class="btn-volver-menu">
+                <span>🏠</span> Volver al Menú
+            </button>
+            <button onclick="agregarTarea()" class="btn-agregar-tarea">
+                <span>➕</span> Agregar Tarea
+            </button>
+            <button onclick="exportarTareas()" class="btn-exportar-tareas">
+                <span>📤</span> Exportar Tareas
+            </button>
+        </div>
+
+        <div class="tareas-table-container">
+            <div class="tareas-table-responsive">
+                <div id="tareas-app"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Evaluación de Pruebas -->
+    <div class="evaluacion-container" id="evaluacion">
+        <h3>📝 Evaluación de Pruebas</h3>
+        <div class="evaluacion-instructions">
+            <p><strong>💡 Instrucciones:</strong> SE EDITA SOLO LO QUE ESTÁ EN BLANCO. PUEDE CAMBIAR LOS PUNTOS MÁXIMOS DE CADA PRUEBA Y EL % DE PESO, LO DEMÁS SE CALCULA AUTOMÁTICAMENTE.</p>
+        </div>
+        
+        <div class="evaluacion-actions">
+            <button onclick="scrollToMenu()" class="btn-volver-menu">
+                <span>🏠</span> Volver al Menú
+            </button>
+            <button onclick="agregarPrueba()" class="btn-agregar-prueba">
+                <span>➕</span> Agregar Prueba
+            </button>
+            <button onclick="exportarEvaluacion()" class="btn-exportar-evaluacion">
+                <span>📤</span> Exportar Evaluación
+            </button>
+        </div>
+
+        <div class="evaluacion-table-container">
+            <div class="evaluacion-table-responsive">
+                <div id="evaluacion-app"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Evaluación de Proyecto -->
+    <div class="proyecto-container" id="proyecto">
+        <h3>🔬 Evaluación de Proyecto</h3>
+        <div class="proyecto-instructions">
+            <p><strong>💡 Instrucciones:</strong> SE EDITA SOLO LO QUE ESTÁ EN BLANCO. PUEDE CAMBIAR LOS PUNTOS MÁXIMOS DE CADA PROYECTO Y EL % DE PESO, LO DEMÁS SE CALCULA AUTOMÁTICAMENTE.</p>
+        </div>
+        
+        <div class="proyecto-actions">
+            <button onclick="scrollToMenu()" class="btn-volver-menu">
+                <span>🏠</span> Volver al Menú
+            </button>
+            <button onclick="agregarProyecto()" class="btn-agregar-proyecto">
+                <span>➕</span> Agregar Proyecto
+            </button>
+            <button onclick="exportarProyecto()" class="btn-exportar-proyecto">
+                <span>📤</span> Exportar Proyecto
+            </button>
+        </div>
+
+        <div class="proyecto-table-container">
+            <div class="proyecto-table-responsive">
+                <div id="proyecto-app"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Evaluación de Portafolio -->
+    <div class="portafolio-container" id="portafolio">
+        <h3>📁 Evaluación de Portafolio</h3>
+        <div class="portafolio-instructions">
+            <p><strong>💡 Instrucciones:</strong> SE EDITA SOLO LO QUE ESTÁ EN BLANCO. PUEDE CAMBIAR LOS PUNTOS MÁXIMOS DE CADA PORTAFOLIO Y EL % DE PESO, LO DEMÁS SE CALCULA AUTOMÁTICAMENTE.</p>
+        </div>
+        
+        <div class="portafolio-actions">
+            <button onclick="scrollToMenu()" class="btn-volver-menu">
+                <span>🏠</span> Volver al Menú
+            </button>
+            <button onclick="agregarPortafolio()" class="btn-agregar-portafolio">
+                <span>➕</span> Agregar Portafolio
+            </button>
+            <button onclick="exportarPortafolio()" class="btn-exportar-portafolio">
+                <span>📤</span> Exportar Portafolio
+            </button>
+        </div>
+
+        <div class="portafolio-table-container">
+            <div class="portafolio-table-responsive">
+                <div id="portafolio-app"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de SEA I Período -->
+    <section id="sea-periodo-app" class="app-section">
+        <h3>📊 SEA I PERIÓDO</h3>
+        <div class="sea-periodo-instructions">
+            <p><strong>💡 Instrucciones:</strong> RESUMEN GENERAL DE TODAS LAS EVALUACIONES. SE MUESTRAN LOS PORCENTAJES FINALES DE CADA SECCIÓN Y LA NOTA FINAL SE CALCULA AUTOMÁTICAMENTE SUMANDO LOS 5 RUBROS PRINCIPALES (SIN ASISTENCIA).</p>
+        </div>
+        
+        <div class="action-buttons">
+            <button onclick="scrollToMenu()" class="btn-volver-menu">
+                <span>🏠</span> Volver al Menú
+            </button>
+            <button onclick="actualizarResumenSeaPeriodo(true)" class="btn-actualizar-sea" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-left: 5px;">
+                <span>🔄</span> Actualizar Resumen
+            </button>
+            <button onclick="exportarSeaPeriodo()" class="btn-exportar-resumen">
+                <span>📤</span> Exportar Resumen
+            </button>
+            <button onclick="probarColoresNotaFinal()" class="btn-probar-colores" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-left: 5px;">
+                <span>🧪</span> Probar Colores
+            </button>
+        </div>
+
+        <div class="nota-aprobacion-config">
+            <label for="notaAprobacionInput">Nota de aprobación (%):</label>
+            <input type="number" id="notaAprobacionInput" min="0" max="100" value="70" step="1" onchange="actualizarNotaAprobacion()">
+        </div>
+
+        <div id="sea-periodo-content" class="content-section"></div>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html> 
+
+ 
