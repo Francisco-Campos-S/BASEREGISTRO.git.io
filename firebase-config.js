@@ -347,7 +347,7 @@ async function guardarTodoFirebase(mostrarNotificacion = false) {
 }
 
 // Función para cargar todos los datos
-async function cargarTodoFirebase() {
+async function cargarTodoFirebase(mostrarNotificacion = false) {
     try {
         const resultados = await Promise.all([
             cargarDatosFirebase(),
@@ -363,7 +363,10 @@ async function cargarTodoFirebase() {
         const datosCargados = resultados.some(resultado => resultado);
         if (datosCargados) {
             console.log('✅ Datos cargados desde Firebase');
-            mostrarAlerta('Datos cargados desde la nube', 'success');
+            // Solo mostrar notificación si se solicita
+            if (mostrarNotificacion && typeof mostrarAlerta === 'function') {
+                mostrarAlerta('Datos cargados desde la nube', 'success');
+            }
         } else {
             console.log('📝 No hay datos en Firebase, usando datos locales');
         }
@@ -381,7 +384,7 @@ function configurarSincronizacionAutomatica() {
         try {
             // Verificar que las variables estén disponibles
             if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
-                await guardarTodoFirebase();
+                await guardarTodoFirebase(false); // SIN notificaciones
                 console.log('🔄 Sincronización automática ejecutada');
             }
         } catch (error) {
@@ -395,7 +398,7 @@ function configurarSincronizacionAutomatica() {
     window.addEventListener('beforeunload', async () => {
         try {
             if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
-                await guardarTodoFirebase();
+                await guardarTodoFirebase(false); // SIN notificaciones
                 console.log('💾 Guardado de emergencia antes de salir');
             }
         } catch (error) {
@@ -407,7 +410,7 @@ function configurarSincronizacionAutomatica() {
     window.addEventListener('blur', async () => {
         try {
             if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
-                await guardarTodoFirebase();
+                await guardarTodoFirebase(false); // SIN notificaciones
                 console.log('💾 Guardado al cambiar de ventana');
             }
         } catch (error) {
@@ -442,7 +445,7 @@ async function inicializarFirebase() {
             
             // Intentar cargar datos existentes
             console.log('☁️ Intentando cargar datos desde Firebase...');
-            await cargarTodoFirebase();
+            await cargarTodoFirebase(false); // SIN notificaciones
             
             console.log('🚀 Firebase inicializado correctamente');
         } else {
@@ -492,6 +495,44 @@ async function guardarManualConNotificacion() {
         console.error('❌ Error en guardado manual:', error);
         if (typeof mostrarAlerta === 'function') {
             mostrarAlerta('Error al guardar datos', 'error');
+        }
+        return false;
+    }
+}
+
+// Función para cargar manual (con notificaciones)
+async function cargarManualConNotificacion() {
+    try {
+        console.log('📥 Carga manual iniciada...');
+        
+        // Verificar conexión
+        const conexionExitosa = await verificarConexionFirebase();
+        if (!conexionExitosa) {
+            console.error('❌ No se pudo conectar a Firebase');
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('Error: No se pudo conectar a Firebase', 'error');
+            }
+            return false;
+        }
+        
+        // Cargar todos los datos CON notificaciones
+        const resultado = await cargarTodoFirebase(true);
+        
+        if (resultado) {
+            console.log('✅ Carga manual exitosa');
+            return true;
+        } else {
+            console.log('📝 No hay datos en Firebase para cargar');
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('No hay datos en la nube para cargar', 'info');
+            }
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ Error en carga manual:', error);
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('Error al cargar datos', 'error');
         }
         return false;
     }
@@ -555,7 +596,7 @@ async function probarFirebase() {
         // Intentar guardar datos si están disponibles
         if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
             console.log('📊 Intentando guardar datos del sistema...');
-            await guardarTodoFirebase();
+            await guardarTodoFirebase(false); // SIN notificaciones
         } else {
             console.log('⚠️ Variables del sistema no disponibles aún');
         }
