@@ -20,7 +20,7 @@ const auth = firebase.auth();
 // ===== FUNCIONES DE BASE DE DATOS =====
 
 // Función para guardar datos de asistencia
-async function guardarDatosFirebase() {
+async function guardarDatosFirebase(mostrarNotificacion = false) {
     try {
         // Verificar que las variables estén definidas
         if (typeof estudiantes === 'undefined') {
@@ -41,12 +41,14 @@ async function guardarDatosFirebase() {
         
         await db.collection('registroAsistencia').doc('datos').set(datos);
         console.log('✅ Datos guardados en Firebase');
-        if (typeof mostrarAlerta === 'function') {
+        
+        // Solo mostrar notificación si se solicita
+        if (mostrarNotificacion && typeof mostrarAlerta === 'function') {
             mostrarAlerta('Datos guardados en la nube', 'success');
         }
     } catch (error) {
         console.error('❌ Error al guardar en Firebase:', error);
-        if (typeof mostrarAlerta === 'function') {
+        if (mostrarNotificacion && typeof mostrarAlerta === 'function') {
             mostrarAlerta('Error al guardar en la nube', 'error');
         }
     }
@@ -304,21 +306,21 @@ async function cargarConfiguracionFirebase() {
 }
 
 // Función para guardar todos los datos
-async function guardarTodoFirebase() {
+async function guardarTodoFirebase(mostrarNotificacion = false) {
     try {
         console.log('💾 Iniciando guardado de todos los datos...');
         
         // Verificar que las variables estén disponibles
         if (typeof estudiantes === 'undefined' || typeof dias === 'undefined') {
             console.error('❌ Variables del sistema no disponibles');
-            if (typeof mostrarAlerta === 'function') {
+            if (mostrarNotificacion && typeof mostrarAlerta === 'function') {
                 mostrarAlerta('Error: Sistema no inicializado completamente', 'error');
             }
             return false;
         }
         
         const resultados = await Promise.all([
-            guardarDatosFirebase(),
+            guardarDatosFirebase(mostrarNotificacion),
             guardarIndicadoresFirebase(),
             guardarEvaluacionFirebase(),
             guardarTareasFirebase(),
@@ -329,13 +331,15 @@ async function guardarTodoFirebase() {
         ]);
         
         console.log('✅ Todos los datos guardados en Firebase');
-        if (typeof mostrarAlerta === 'function') {
+        
+        // Solo mostrar notificación si se solicita
+        if (mostrarNotificacion && typeof mostrarAlerta === 'function') {
             mostrarAlerta('Todos los datos guardados en la nube', 'success');
         }
         return true;
     } catch (error) {
         console.error('❌ Error al guardar todo:', error);
-        if (typeof mostrarAlerta === 'function') {
+        if (mostrarNotificacion && typeof mostrarAlerta === 'function') {
             mostrarAlerta('Error al guardar en la nube', 'error');
         }
         return false;
@@ -372,7 +376,7 @@ async function cargarTodoFirebase() {
 
 // Función para sincronizar datos automáticamente
 function configurarSincronizacionAutomatica() {
-    // Sincronizar cada 10 segundos (más frecuente)
+    // Sincronizar cada 5 segundos (muy frecuente)
     setInterval(async () => {
         try {
             // Verificar que las variables estén disponibles
@@ -383,9 +387,33 @@ function configurarSincronizacionAutomatica() {
         } catch (error) {
             console.error('❌ Error en sincronización automática:', error);
         }
-    }, 10000); // Cada 10 segundos
+    }, 5000); // Cada 5 segundos
     
-    console.log('🔄 Sincronización automática configurada (cada 10 segundos)');
+    console.log('🔄 Sincronización automática configurada (cada 5 segundos)');
+    
+    // También sincronizar cuando el usuario sale de la página
+    window.addEventListener('beforeunload', async () => {
+        try {
+            if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
+                await guardarTodoFirebase();
+                console.log('💾 Guardado de emergencia antes de salir');
+            }
+        } catch (error) {
+            console.error('❌ Error en guardado de emergencia:', error);
+        }
+    });
+    
+    // Sincronizar cuando la página pierde el foco
+    window.addEventListener('blur', async () => {
+        try {
+            if (typeof estudiantes !== 'undefined' && typeof dias !== 'undefined') {
+                await guardarTodoFirebase();
+                console.log('💾 Guardado al cambiar de ventana');
+            }
+        } catch (error) {
+            console.error('❌ Error en guardado al cambiar ventana:', error);
+        }
+    });
 }
 
 // Función para verificar conexión a Firebase
@@ -422,6 +450,85 @@ async function inicializarFirebase() {
         }
     } catch (error) {
         console.error('❌ Error al inicializar Firebase:', error);
+    }
+}
+
+// Función para guardado manual (con notificaciones)
+async function guardarManualConNotificacion() {
+    try {
+        console.log('💾 Guardado manual iniciado...');
+        
+        // Verificar conexión
+        const conexionExitosa = await verificarConexionFirebase();
+        if (!conexionExitosa) {
+            console.error('❌ No se pudo conectar a Firebase');
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('Error: No se pudo conectar a Firebase', 'error');
+            }
+            return false;
+        }
+        
+        // Verificar variables
+        if (typeof estudiantes === 'undefined' || typeof dias === 'undefined') {
+            console.error('❌ Variables del sistema no disponibles');
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('Error: Sistema no inicializado completamente', 'error');
+            }
+            return false;
+        }
+        
+        // Guardar todos los datos CON notificaciones
+        const resultado = await guardarTodoFirebase(true);
+        
+        if (resultado) {
+            console.log('✅ Guardado manual exitoso');
+            return true;
+        } else {
+            console.error('❌ Error en guardado manual');
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ Error en guardado manual:', error);
+        if (typeof mostrarAlerta === 'function') {
+            mostrarAlerta('Error al guardar datos', 'error');
+        }
+        return false;
+    }
+}
+
+// Función para forzar sincronización inmediata (sin notificaciones)
+async function forzarSincronizacion() {
+    try {
+        console.log('🚀 Forzando sincronización inmediata...');
+        
+        // Verificar conexión
+        const conexionExitosa = await verificarConexionFirebase();
+        if (!conexionExitosa) {
+            console.error('❌ No se pudo conectar a Firebase');
+            return false;
+        }
+        
+        // Verificar variables
+        if (typeof estudiantes === 'undefined' || typeof dias === 'undefined') {
+            console.error('❌ Variables del sistema no disponibles');
+            return false;
+        }
+        
+        // Guardar todos los datos SIN notificaciones
+        const resultado = await guardarTodoFirebase(false);
+        
+        if (resultado) {
+            console.log('✅ Sincronización forzada exitosa');
+            return true;
+        } else {
+            console.error('❌ Error en sincronización forzada');
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ Error en sincronización forzada:', error);
+        return false;
     }
 }
 
